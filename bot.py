@@ -12,7 +12,7 @@ def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"ratings": {}, "user_ratings": {}, "history": []}
+    return {"ratings": {}, "user_ratings": {}}
 
 def save_data():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -21,56 +21,15 @@ def save_data():
 data = load_data()
 
 STUDENTS = [
-    "👩‍🏫 Алия",
-    "💃🏻 Айара",
-    "🤓 Сейитбек",
-    "😴 Марлен",
-    "😇 Айлун",
-    "🤪 Зарема",
-    "🎒 Бектур",
-    "🐱 Мирлан",
-    "🤠 Нурислам",
-    "🍩 Алия",
-    "🌷 Аиша",
-    "😂 Нурел",
-    "👑 Чингиз",
-    "😜 Самат",
-    "🪪 Григорий",
-    "👧🏻 Аида",
-    "🔥💪😎 Арсен",
-    "🏋️ Нурэл",
-    "😎 Эльдар",
-    "🦧 Кутман",
-    "🚬 Максим",
-    "👯 Даниэл",
-    "🎀 Амина",
-    "💇‍♂️ Ырыскелди",
-    "⚽ Алинур",
-    "👩🏻‍💼 Айдана",
-    "🎮 Актилек",
-    "🤫 Эмилбек",
-    "👴 Бактилек",
-    "☠️ Розалия",
-    "📈 Байдоолот",
-    "🤪 Калэл",
-    "🚬 Руслан",
-    "🍩 Толгонай",
-    "🎴 Эмир",
-    "🚲 Бакы",
-    "📏 Саламат"
+    "👩‍🏫 Алия", "💃🏻 Айара", "🤓 Сейитбек", "😴 Марлен", "😇 Айлун",
+    "🤪 Зарема", "🎒 Бектур", "🐱 Мирлан", "🤠 Нурислам", "🍩 Алия",
+    "🌷 Аиша", "😂 Нурел", "👑 Чингиз", "😜 Самат", "🪪 Григорий",
+    "👧🏻 Аида", "🔥💪😎 Арсен", "🏋️ Нурэл", "😎 Эльдар", "🦧 Кутман",
+    "🚬 Максим", "👯 Даниэл", "🎀 Амина", "💇‍♂️ Ырыскелди", "⚽ Алинур",
+    "👩🏻‍💼 Айдана", "🎮 Актилек", "🤫 Эмилбек", "👴 Бактилек", "☠️ Розалия",
+    "📈 Байдоолот", "🤪 Калэл", "🚬 Руслан", "🍩 Толгонай", "🎴 Эмир",
+    "🚲 Бакы", "📏 Саламат"
 ]
-def log_action(user_info, target, score):
-    data["history"].append({
-        "user": user_info,
-        "target": target,
-        "score": score,
-        "time": "сейчас"  # можно добавить время
-    })
-    save_data()
-
-def get_user_info(update):
-    u = update.effective_user
-    return {"id": u.id, "name": u.first_name or u.username or str(u.id)}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -121,7 +80,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data["user_ratings"][name] = {}
         data["ratings"][name].append(score)
         data["user_ratings"][name][user_id] = score
-        log_action(get_user_info(update), name, score)
         save_data()
         keyboard = [
             [InlineKeyboardButton("⭐ Ещё", callback_data="rate")],
@@ -165,10 +123,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not stats:
             text = "📊 Нет оценок"
         else:
-            text = "📊 Рейтинг:\n\n"
+            text = "📊 Рейтинг одногруппников:\n\n"
             for i, (name, avg, cnt) in enumerate(stats, 1):
                 medal = {1:"🥇",2:"🥈",3:"🥉"}.get(i, f"{i}.")
-                text += f"{medal} {name} — {avg:.1f} ({cnt})\n"
+                text += f"{medal} {name} — {avg:.1f}/10 ({cnt} оценок)\n"
         keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="main")]]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
     
@@ -176,16 +134,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_user.id != ADMIN_ID:
             await query.message.edit_text("❌ Нет доступа")
             return
-        context.user_data["admin_page"] = 0
-        await show_admin_page(update, context)
-    
-    elif query.data.startswith("admin_page_"):
-        if update.effective_user.id != ADMIN_ID:
-            await query.message.edit_text("❌ Нет доступа")
-            return
-        page = int(query.data.split("_")[2])
-        context.user_data["admin_page"] = page
-        await show_admin_page(update, context)
+        total = sum(len(v) for v in data["ratings"].values())
+        users = len(data["user_ratings"])
+        await query.message.edit_text(f"👑 Админ панель\n\n📊 Всего оценок: {total}\n👥 Уникальных пользователей: {users}")
     
     elif query.data == "main":
         keyboard = [
@@ -195,39 +146,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await query.message.edit_text("🎓 Анонимный бот колледжа", reply_markup=InlineKeyboardMarkup(keyboard))
 
-async def show_admin_page(update, context):
-    page = context.user_data.get("admin_page", 0)
-    history = data["history"][::-1]  # от новых к старым
-    total = len(history)
-    per_page = 10
-    start = page * per_page
-    end = start + per_page
-    items = history[start:end]
-    
-    if not items:
-        text = "📜 История пуста"
-    else:
-        text = f"📜 Последние действия (стр. {page+1}/{(total-1)//per_page + 1})\n\n"
-        for h in items:
-            user = h["user"].get("name", "unknown")
-            target = h["target"]
-            score = h["score"]
-            text += f"👤 {user} → {target} → {score}/10\n"
-    
-    keyboard = []
-    if start > 0:
-        keyboard.append(InlineKeyboardButton("◀️ Назад", callback_data=f"admin_page_{page-1}"))
-    if end < total:
-        keyboard.append(InlineKeyboardButton("Вперёд ▶️", callback_data=f"admin_page_{page+1}"))
-    keyboard.append([InlineKeyboardButton("🔙 Главное меню", callback_data="main")])
-    
-    await update.callback_query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    print("✅ Бот с админ-историей запущен!")
+    print("✅ Бот запущен!")
     app.run_polling()
 
 if __name__ == "__main__":
