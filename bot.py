@@ -3,7 +3,7 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-TOKEN = "8279994734:AAFytYh9IGtDYOhajQ8U6ApewGy8gbnsv9g"
+TOKEN = ""
 ADMIN_ID = 5920598476
 
 DATA_FILE = "college_data.json"
