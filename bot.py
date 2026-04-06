@@ -3,7 +3,7 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-TOKEN = ""
+TOKEN = "8279994734:AAHA89PaFFPBM_1Abru_dGyIIoYnYp97s2g"
 ADMIN_ID = 5920598476
 
 DATA_FILE = "college_data.json"
@@ -25,8 +25,8 @@ STUDENTS = [
     "🤪 Зарема", "🎒 Бектур", "🐱 Мирлан", "🤠 Нурислам", "🍩 Алия",
     "🌷 Аиша", "😂 Нурел", "👑 Чингиз", "😜 Самат", "🪪 Григорий",
     "👧🏻 Аида", "🔥💪😎 Арсен", "🏋️ Нурэл", "😎 Эльдар", "🦧 Кутман",
-    "🚬 Максим", "👯 Даниэл", "🎀 Амина", "💇‍♂️ Ырыскелди", "⚽ Алинур",
-    "👩🏻‍💼 Айдана", "🎮 Актилек", "🤫 Эмилбек", "👴 Бактилек", "☠️ Розалия",
+    "🏌🏻‍ Максим", "👯 Даниэл", "🎀 Амина", "💇‍♂️ Ырыскелди", "⚽ Алинур",
+    "🍣 Айдана", "🎮 Актилек", "🤫 Эмилбек", "👴 Бактилек", "☠️ Розалия",
     "📈 Байдоолот", "🤪 Калэл", "🚬 Руслан", "🍩 Толгонай", "🎴 Эмир",
     "🚲 Бакы", "📏 Саламат"
 ]
@@ -37,7 +37,7 @@ def get_user_name(update):
 
 def log_action(update, target, score):
     user_name = get_user_name(update)
-    data["history"].insert(0, {  # новые в начало
+    data["history"].insert(0, {
         "user": user_name,
         "target": target,
         "score": score
@@ -58,15 +58,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     data_cb = query.data
 
-    # ----- МЕНЮ ОЦЕНКИ -----
     if data_cb == "rate":
         keyboard = [[InlineKeyboardButton(s, callback_data=f"rate_{s}")] for s in STUDENTS]
         keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="main")])
         await query.message.edit_text("👨‍🎓 Выбери одногруппника:", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data_cb.startswith("rate_"):
-        name = data_cb[5:]  # убираем "rate_"
-        # проверяем, есть ли уже оценка
+        name = data_cb[5:]
         if name in data["user_ratings"] and user_id in data["user_ratings"][name]:
             old = data["user_ratings"][name][user_id]
             keyboard = [
@@ -77,7 +75,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.edit_text(f"⚠️ Твоя оценка {name}: {old}/10", reply_markup=InlineKeyboardMarkup(keyboard))
             return
         
-        # показываем кнопки 1–10
         keyboard = [
             [InlineKeyboardButton(str(i), callback_data=f"score_{name}_{i}") for i in range(1,6)],
             [InlineKeyboardButton(str(i), callback_data=f"score_{name}_{i}") for i in range(6,11)],
@@ -85,7 +82,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await query.message.edit_text(f"⭐ Оцени {name}:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # ----- СОХРАНЕНИЕ ОЦЕНКИ -----
     elif data_cb.startswith("score_"):
         parts = data_cb.split("_")
         name = parts[1]
@@ -105,15 +101,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log_action(update, name, score)
         save_data()
         
-        keyboard = [
-            [InlineKeyboardButton("⭐ Оценить другого", callback_data="rate")],
-            [InlineKeyboardButton("🏠 Главное меню", callback_data="main")]
-        ]
-        await query.message.edit_text(f"✅ {name} — {score}/10", reply_markup=InlineKeyboardMarkup(keyboard))
+        # 🔥 ПОСЛЕ ОЦЕНКИ — СРАЗУ ПОКАЗЫВАЕМ СПИСОК СТУДЕНТОВ
+        keyboard = [[InlineKeyboardButton(s, callback_data=f"rate_{s}")] for s in STUDENTS]
+        keyboard.append([InlineKeyboardButton("🔙 Главное меню", callback_data="main")])
+        await query.message.edit_text(f"✅ {name} — {score}/10\n\n👨‍🎓 Выбери следующего:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # ----- ИЗМЕНЕНИЕ ОЦЕНКИ -----
     elif data_cb.startswith("change_"):
-        name = data_cb[7:]  # убираем "change_"
+        name = data_cb[7:]
         if name in data["user_ratings"] and user_id in data["user_ratings"][name]:
             old = data["user_ratings"][name][user_id]
             data["ratings"][name].remove(old)
@@ -127,9 +121,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await query.message.edit_text(f"✏️ Новая оценка для {name}:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # ----- УДАЛЕНИЕ ОЦЕНКИ -----
     elif data_cb.startswith("delete_"):
-        name = data_cb[7:]  # убираем "delete_"
+        name = data_cb[7:]
         if name in data["user_ratings"] and user_id in data["user_ratings"][name]:
             old = data["user_ratings"][name][user_id]
             data["ratings"][name].remove(old)
@@ -139,7 +132,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.message.edit_text("❌ Оценка не найдена")
 
-    # ----- СТАТИСТИКА (РЕЙТИНГ) -----
     elif data_cb == "stats":
         stats = []
         for s in STUDENTS:
@@ -160,7 +152,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="main")]]
         await query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
-    # ----- АДМИН ПАНЕЛЬ (ИСТОРИЯ) -----
     elif data_cb == "admin":
         if update.effective_user.id != ADMIN_ID:
             await query.message.edit_text("❌ Нет доступа")
@@ -176,7 +167,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["admin_page"] = page
         await show_admin_page(update, context)
 
-    # ----- ГЛАВНОЕ МЕНЮ -----
     elif data_cb == "main":
         keyboard = [
             [InlineKeyboardButton("⭐ Оценить", callback_data="rate")],
@@ -214,7 +204,7 @@ def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    print("✅ Бот с админ-историей запущен!")
+    print("✅ Бот запущен!")
     app.run_polling()
 
 if __name__ == "__main__":
