@@ -101,7 +101,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log_action(update, name, score)
         save_data()
         
-        # 🔥 ПОСЛЕ ОЦЕНКИ — СРАЗУ ПОКАЗЫВАЕМ СПИСОК СТУДЕНТОВ
+        # ✅ ПОСЛЕ ОЦЕНКИ — ПОКАЗЫВАЕМ СПИСОК СТУДЕНТОВ
         keyboard = [[InlineKeyboardButton(s, callback_data=f"rate_{s}")] for s in STUDENTS]
         keyboard.append([InlineKeyboardButton("🔙 Главное меню", callback_data="main")])
         await query.message.edit_text(f"✅ {name} — {score}/10\n\n👨‍🎓 Выбери следующего:", reply_markup=InlineKeyboardMarkup(keyboard))
